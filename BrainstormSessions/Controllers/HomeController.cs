@@ -13,12 +13,10 @@ namespace BrainstormSessions.Controllers
     public class HomeController : Controller
     {
         private readonly IBrainstormSessionRepository _sessionRepository;
-        private readonly ILogger<HomeController> _logger;
 
-        public HomeController(IBrainstormSessionRepository sessionRepository, ILogger<HomeController> logger)
+        public HomeController(IBrainstormSessionRepository sessionRepository)
         {
             _sessionRepository = sessionRepository;
-            _logger = logger;
         }
 
         public async Task<IActionResult> Index()
@@ -47,12 +45,10 @@ namespace BrainstormSessions.Controllers
         {
             if (!ModelState.IsValid)
             {
-                _logger.LogError("User submitted wrong session name.");
                 return BadRequest(ModelState);
             }
             else
             {
-                _logger.LogInformation("User has active session");
                 await _sessionRepository.AddAsync(new BrainstormSession()
                 {
                     DateCreated = DateTimeOffset.Now,
