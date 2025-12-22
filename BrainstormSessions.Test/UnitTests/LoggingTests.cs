@@ -1,32 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using BrainstormSessions.Api;
+﻿using BrainstormSessions.Api;
 using BrainstormSessions.Controllers;
 using BrainstormSessions.Core.Interfaces;
 using BrainstormSessions.Core.Model;
-using log4net.Appender;
-using log4net.Config;
-using log4net.Core;
+using Microsoft.Extensions.Logging;
 using Moq;
+using Serilog;
+using Serilog.Events;
+using Serilog.Sinks.InMemory;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace BrainstormSessions.Test.UnitTests
 {
     public class LoggingTests : IDisposable
     {
-        private readonly MemoryAppender _appender;
+
+        private readonly InMemorySink _sink;
+        private readonly ILoggerFactory _loggerFactory;
 
         public LoggingTests()
         {
-            _appender = new MemoryAppender();
-            BasicConfigurator.Configure(_appender);
+            _sink = new InMemorySink();
+            var logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Sink(_sink)
+                .CreateLogger();
+
+            _loggerFactory = new LoggerFactory().AddSerilog(logger);
+
         }
 
         public void Dispose()
         {
-            _appender.Clear();
+            _sink.Dispose();
         }
 
         [Fact]
@@ -36,14 +45,13 @@ namespace BrainstormSessions.Test.UnitTests
             var mockRepo = new Mock<IBrainstormSessionRepository>();
             mockRepo.Setup(repo => repo.ListAsync())
                 .ReturnsAsync(GetTestSessions());
-            var controller = new HomeController(mockRepo.Object);
+            var controller = new HomeController(mockRepo.Object, _loggerFactory.CreateLogger<HomeController>());
 
             // Act
             var result = await controller.Index();
 
             // Assert
-            var logEntries = _appender.GetEvents();
-            Assert.True(logEntries.Any(l => l.Level == Level.Info), "Expected Info messages in the logs");
+            Assert.True(_sink.LogEvents.Any(l => l.Level == LogEventLevel.Information), "Expected Info messages in the logs");
         }
 
         [Fact]
@@ -53,7 +61,7 @@ namespace BrainstormSessions.Test.UnitTests
             var mockRepo = new Mock<IBrainstormSessionRepository>();
             mockRepo.Setup(repo => repo.ListAsync())
                 .ReturnsAsync(GetTestSessions());
-            var controller = new HomeController(mockRepo.Object);
+            var controller = new HomeController(mockRepo.Object, _loggerFactory.CreateLogger<HomeController>());
             controller.ModelState.AddModelError("SessionName", "Required");
             var newSession = new HomeController.NewSessionModel();
 
@@ -61,8 +69,7 @@ namespace BrainstormSessions.Test.UnitTests
             var result = await controller.Index(newSession);
 
             // Assert
-            var logEntries = _appender.GetEvents();
-            Assert.True(logEntries.Any(l => l.Level == Level.Warn), "Expected Warn messages in the logs");
+            Assert.True(_sink.LogEvents.Any(l => l.Level == LogEventLevel.Warning), "Expected Warn messages in the logs");
         }
 
         [Fact]
@@ -70,15 +77,14 @@ namespace BrainstormSessions.Test.UnitTests
         {
             // Arrange & Act
             var mockRepo = new Mock<IBrainstormSessionRepository>();
-            var controller = new IdeasController(mockRepo.Object);
+            var controller = new IdeasController(mockRepo.Object, _loggerFactory.CreateLogger<IdeasController>());
             controller.ModelState.AddModelError("error", "some error");
 
             // Act
             var result = await controller.CreateActionResult(model: null);
 
             // Assert
-            var logEntries = _appender.GetEvents();
-            Assert.True(logEntries.Any(l => l.Level == Level.Error), "Expected Error messages in the logs");
+            Assert.True(_sink.LogEvents.Any(l => l.Level == LogEventLevel.Error), "Expected Error messages in the logs");
         }
 
         [Fact]
@@ -90,14 +96,13 @@ namespace BrainstormSessions.Test.UnitTests
             mockRepo.Setup(repo => repo.GetByIdAsync(testSessionId))
                 .ReturnsAsync(GetTestSessions().FirstOrDefault(
                     s => s.Id == testSessionId));
-            var controller = new SessionController(mockRepo.Object);
+            var controller = new SessionController(mockRepo.Object, _loggerFactory.CreateLogger<SessionController>());
 
             // Act
             var result = await controller.Index(testSessionId);
 
             // Assert
-            var logEntries = _appender.GetEvents();
-            Assert.True(logEntries.Count(l => l.Level == Level.Debug) == 2, "Expected 2 Debug messages in the logs");
+            Assert.True(_sink.LogEvents.Count(l => l.Level == LogEventLevel.Debug) == 2, "Expected 2 Debug messages in the logs");
         }
 
         private List<BrainstormSession> GetTestSessions()

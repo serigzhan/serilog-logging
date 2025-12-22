@@ -14,9 +14,12 @@ namespace BrainstormSessions.Controllers
     {
         private readonly IBrainstormSessionRepository _sessionRepository;
 
-        public HomeController(IBrainstormSessionRepository sessionRepository)
+        private readonly ILogger<HomeController> _logger;
+
+        public HomeController(IBrainstormSessionRepository sessionRepository, ILogger<HomeController> logger)
         {
             _sessionRepository = sessionRepository;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Index()
@@ -30,6 +33,8 @@ namespace BrainstormSessions.Controllers
                 Name = session.Name,
                 IdeaCount = session.Ideas.Count
             });
+
+            _logger.LogInformation("Retrieved {SessionCount} sessions", sessionList.Count);
 
             return View(model);
         }
@@ -45,6 +50,8 @@ namespace BrainstormSessions.Controllers
         {
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("Failed to create new Brainstorm Session due to invalid model state.");
+
                 return BadRequest(ModelState);
             }
             else

@@ -6,6 +6,7 @@ using BrainstormSessions.ClientModels;
 using BrainstormSessions.Core.Interfaces;
 using BrainstormSessions.Core.Model;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace BrainstormSessions.Api
 {
@@ -13,9 +14,12 @@ namespace BrainstormSessions.Api
     {
         private readonly IBrainstormSessionRepository _sessionRepository;
 
-        public IdeasController(IBrainstormSessionRepository sessionRepository)
+        private readonly ILogger<IdeasController> _logger;
+
+        public IdeasController(IBrainstormSessionRepository sessionRepository, ILogger<IdeasController> logger)
         {
             _sessionRepository = sessionRepository;
+            _logger = logger;
         }
 
         #region snippet_ForSessionAndCreate
@@ -101,6 +105,7 @@ namespace BrainstormSessions.Api
         {
             if (!ModelState.IsValid)
             {
+                _logger.LogError("Failed to add idea. Invalid model state");
                 return BadRequest(ModelState);
             }
 
