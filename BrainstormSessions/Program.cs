@@ -22,18 +22,6 @@ namespace BrainstormSessions
 
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
-                //.WriteTo.Email(
-                //    new EmailSinkOptions
-                //    {
-                //        From = "app@brainstorm.local",
-                //        To = new List<string> { "admin@brainstorm.local" },
-                //        Host = "localhost",
-                //        Port = 25,
-                //        Subject = new Serilog.Formatting.Display.MessageTemplateTextFormatter("Brainstorm Error Alert", null),
-                //        Credentials = new NetworkCredential("username", "password")
-                //    },
-                //    restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Error
-                //)
                 .CreateLogger();
 
             try
